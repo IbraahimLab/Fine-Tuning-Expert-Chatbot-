@@ -3,15 +3,31 @@ from langchain_core.output_parsers import StrOutputParser
 from app.core.llm import get_llm
 from app.rag.retriever import get_retriever
 from app.rag.memory import get_conversation_memory
+from pathlib import Path
+
+def load_guardrails() -> str:
+    """
+    Load prompt-based guardrails from a static markdown file.
+    This is treated as policy, not dynamic input.
+    """
+    guardrails_path = (
+    Path(__file__).resolve().parents[2]
+    / "app"
+    / "core"
+    / "prompts"
+    / "guardrails.md"
+)
+    return guardrails_path.read_text(encoding="utf-8")
+
+GUARDRAILS = load_guardrails()
+
 
 
 PROMPT = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "You are a careful LLM fine-tuning expert assistant. "
-            "Use ONLY the provided context. If missing, say you don't know. "
-            "Explain concepts in an easy way.\n\n"
+            "{guardrails}\n\n"
             "Conversation so far:\n{chat_history}"
         ),
         ("human", "Question: {question}\n\nContext:\n{context}"),
@@ -46,13 +62,13 @@ def answer_question(question: str) -> dict:
     chain = PROMPT | llm | StrOutputParser()
 
     answer = chain.invoke(
-        {
-            "question": question,
-            "context": context,
-            "chat_history": chat_history,
-        }
-    )
-
+    {
+        "question": question,
+        "context": context,
+        "chat_history": chat_history,
+        "guardrails": GUARDRAILS,
+    }
+)
     # IMPORTANT: update memory AFTER the answer
     memory.save_context(
         {"input": question},
