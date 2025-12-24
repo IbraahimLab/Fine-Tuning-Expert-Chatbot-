@@ -44,3 +44,5 @@ jobs:
           command_timeout: 15m
           script: |
             bash /home/ubuntu/restart_streamlit.sh
+
+#its all
