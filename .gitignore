@@ -9,3 +9,5 @@ wheels/
 # Virtual environments
 .venv
 .env
+ec2_github_actions_key.pub
+ec2_github_actions_key
