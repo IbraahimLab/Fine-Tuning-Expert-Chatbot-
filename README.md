@@ -16,3 +16,4 @@ uv run streamlit run app/ui/streamlit_app.py
 ```
 
 
+## in streamlit 
