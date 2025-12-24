@@ -33,8 +33,10 @@ st.set_page_config(
     layout="wide",
 )
 
-API_URL = os.environ.get("API_URL", "http://localhost:8000/query")
-
+API_URL = os.environ.get(
+    "FASTAPI_URL",
+    "http://localhost:8000/query"
+)
 # -----------------------------
 # Sidebar
 # -----------------------------
