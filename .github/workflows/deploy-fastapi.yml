@@ -1,46 +1,42 @@
-name: Deploy FastAPI to EC2
+name: Deploy FastAPI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
+        with:
+          region: us-east-1
 
-      - name: Build and push Docker image
+      - name: Build and push FastAPI image
         run: |
-          docker build \
-            -t rag-fastapi \
-            -f docker/fastapi/Dockerfile .
+          docker build -t rag-fastapi -f docker/fastapi/Dockerfile .
+          docker tag rag-fastapi:latest 214777058381.dkr.ecr.us-east-1.amazonaws.com/rag-fastapi:latest
+          docker push 214777058381.dkr.ecr.us-east-1.amazonaws.com/rag-fastapi:latest
 
-          docker tag rag-fastapi:latest ${{ secrets.ECR_REPO_URI }}:latest
-          docker push ${{ secrets.ECR_REPO_URI }}:latest
-
-      - name: Deploy to EC2
+      - name: Deploy FastAPI on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          port: 22
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          timeout: 120s
+          command_timeout: 15m
           script: |
             whoami
             uname -a
             bash /home/ubuntu/restart_container.sh
-
+        env:
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

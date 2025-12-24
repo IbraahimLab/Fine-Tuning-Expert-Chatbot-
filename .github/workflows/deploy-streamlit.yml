@@ -1,45 +1,43 @@
-name: Deploy Streamlit to EC2
+name: Deploy Streamlit
 
 on:
   push:
     branches: [main]
     paths:
-      - "ui/**"
+      - "app/ui/**"
       - "docker/streamlit/**"
-      - ".github/workflows/deploy-streamlit.yml"
-
-env:
-  AWS_REGION: us-east-1
-  ECR_REPO_URI: 214777058381.dkr.ecr.us-east-1.amazonaws.com/rag-streamlit
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
+        with:
+          region: us-east-1
 
       - name: Build and push Streamlit image
         run: |
           docker build -t rag-streamlit -f docker/streamlit/Dockerfile .
-          docker tag rag-streamlit:latest $ECR_REPO_URI:latest
-          docker push $ECR_REPO_URI:latest
+          docker tag rag-streamlit:latest 214777058381.dkr.ecr.us-east-1.amazonaws.com/rag-streamlit:latest
+          docker push 214777058381.dkr.ecr.us-east-1.amazonaws.com/rag-streamlit:latest
 
-      - name: Deploy on EC2
+      - name: Deploy Streamlit on EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          script: bash /home/ubuntu/restart_streamlit.sh
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
+          timeout: 120s
+          command_timeout: 15m
+          script: |
+            bash /home/ubuntu/restart_streamlit.sh
+        env:
+          AWS_REGION: us-east-1
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

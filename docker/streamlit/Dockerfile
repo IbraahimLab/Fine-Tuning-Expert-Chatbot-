@@ -19,7 +19,7 @@ COPY pyproject.toml uv.lock ./
 # Install uv
 RUN pip install --no-cache-dir uv
 
-# Install Python deps   toaching it to run uv sync --frozen
+# Install Python deps   toaching it 
 RUN uv sync --frozen
 
 # Copy application code (IMPORTANT)
